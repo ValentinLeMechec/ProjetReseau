@@ -1,11 +1,10 @@
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.concurrent.Semaphore;
@@ -40,8 +39,8 @@ public class ServeurService implements Runnable
 			InputStream in = client.getInputStream();
 			OutputStream out = client.getOutputStream();
 			
-			BufferedReader buffIn = new BufferedReader(new InputStreamReader(in));
-			PrintWriter buffOut = new PrintWriter(new OutputStreamWriter(out));
+			ObjectInputStream buffIn = new ObjectInputStream(in);
+			ObjectOutputStream buffOut = new ObjectOutputStream(out);
 			
 			boolean enCour = true;
 			
@@ -50,12 +49,15 @@ public class ServeurService implements Runnable
 			String nom;
 			String type;
 			String derniereModif;
+			
 			Long lm;
 			
 			File f;
+			byte[] data;
 			
 			System.out.println("avant le switch");
-			String mode = buffIn.readLine();
+			
+			String mode = (String) buffIn.readObject();
 			System.out.println(mode);
 			
 			switch (mode)
@@ -72,10 +74,13 @@ public class ServeurService implements Runnable
 					do
 					{
 						System.out.println("la");
-						message=buffIn.readLine();
+						
+						message=(String) buffIn.readObject();
 						System.out.println(message);
+						
 						if(message!=null && message.equals("finRacine1"))
 							enCour = false;
+						
 						else if (message!=null && !message.equals("null"))
 						{	
 							nom=message.split("  ")[0];
@@ -95,20 +100,20 @@ public class ServeurService implements Runnable
 								if(f.lastModified()==lm)
 								{
 									System.out.println("OK");
-									buffOut.println("OK");
+									buffOut.writeObject("OK");
 									buffOut.flush();
 								}
 								else
 								{
 									System.out.println("PASOK");
-									buffOut.println("PASOK");
+									buffOut.writeObject("PASOK");
 									buffOut.flush();
+									
 									PrintWriter fos = new PrintWriter(new FileOutputStream(f));
 									do
 									{
 										System.out.println("ici");
-										message=buffIn.readLine();
-										System.out.println(message);
+										message=(String) buffIn.readObject();
 										if(!message.equals("null"))
 										{
 												fos.println(message);
@@ -139,7 +144,7 @@ public class ServeurService implements Runnable
 					do
 					{
 						System.out.println("la");
-						message=buffIn.readLine();
+						message=(String) buffIn.readObject();
 						System.out.println(message);
 						if(message!=null && message.equals("finRacine1"))
 							enCour = false;
@@ -161,14 +166,14 @@ public class ServeurService implements Runnable
 								f.createNewFile();
 								
 								System.out.println("PASOK");
-								buffOut.println("PASOK");
+								buffOut.writeObject("PASOK");
 								buffOut.flush();
+
 								PrintWriter fos = new PrintWriter(new FileOutputStream(f));
 								do
 								{
 									System.out.println("ici");
-									message=buffIn.readLine();
-									System.out.println(message);
+									message=(String) buffIn.readObject();
 									if(!message.equals("null"))
 									{
 											fos.println(message);
@@ -199,7 +204,7 @@ public class ServeurService implements Runnable
 					do
 					{
 						System.out.println("la");
-						message=buffIn.readLine();
+						message=(String) buffIn.readObject();
 						System.out.println(message);
 						if(message!=null && message.equals("finRacine1"))
 							enCour = false;
@@ -219,23 +224,23 @@ public class ServeurService implements Runnable
 							{
 								f = new File(nom);
 								f.createNewFile();
-								if(f.lastModified()==lm)
+								if(f.lastModified()>lm)
 								{
 									System.out.println("OK");
-									buffOut.println("OK");
+									buffOut.writeObject("OK");
 									buffOut.flush();
 								}
 								else
 								{
 									System.out.println("PASOK");
-									buffOut.println("PASOK");
+									buffOut.writeObject("PASOK");
 									buffOut.flush();
+
 									PrintWriter fos = new PrintWriter(new FileOutputStream(f));
 									do
 									{
 										System.out.println("ici");
-										message=buffIn.readLine();
-										System.out.println(message);
+										message=(String) buffIn.readObject();
 										if(!message.equals("null"))
 										{
 												fos.println(message);
@@ -268,6 +273,9 @@ public class ServeurService implements Runnable
 		} 
 		catch (IOException e) 
 		{
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
