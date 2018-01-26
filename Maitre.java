@@ -11,9 +11,11 @@ import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
-public class Maitre extends Esclave
+public class Maitre
 {
 	static int compteur = 1;
+	
+
 	
 	public static void main(String[] args) 
 	{
@@ -33,28 +35,12 @@ public class Maitre extends Esclave
 			buffOut.writeObject(mode);
 			buffOut.flush();
 			
-			/*if(args.length>=1)  
-			{
-				if(args.length==2) 
-				{
-					file = new File(args[1] + "\\racine");
-					file.mkdirs();
-				}
-				else 
-				{
-					file = new File("H:\\Mes documents\\ProgReseauProjet\\racine"); 
-					file.mkdirs();
-
-				}
-			}
-			else
-			{
-				file = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
-				file.mkdirs();
-
-			}*/
+			System.out.println("Veuillez entrer le chemin:");
+			String chemin= consoleIn.readLine();
 			
-			racine = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
+			
+			
+			racine = new File(chemin);
 			racine.mkdirs();
 			
 			try {
