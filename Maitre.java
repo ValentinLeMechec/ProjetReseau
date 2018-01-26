@@ -1,8 +1,11 @@
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -18,16 +21,16 @@ public class Maitre extends Esclave
 		
 		try
 		{
-			Socket socket = new Socket(InetAddress.getByName("172.18.50.20"), 56565);
-			PrintWriter buffOut= new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-			BufferedReader buffIn= new BufferedReader(new InputStreamReader(socket.getInputStream()));
+			Socket socket = new Socket(InetAddress.getByName("172.18.50.99"), 56565);
+			ObjectOutputStream buffOut= new ObjectOutputStream(socket.getOutputStream());
+			ObjectInputStream buffIn= new ObjectInputStream(socket.getInputStream());
 			
 			/*envoi au serveur du choix du mode*/
 			System.out.println("Veuillez entrer le mode:");
 			BufferedReader consoleIn= new BufferedReader(new InputStreamReader(System.in));
 			String mode= consoleIn.readLine();
 			
-			buffOut.println(mode);
+			buffOut.writeObject(mode);
 			buffOut.flush();
 			
 			/*if(args.length>=1)  
@@ -54,7 +57,12 @@ public class Maitre extends Esclave
 			racine = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
 			racine.mkdirs();
 			
-			envoi(racine, buffOut, buffIn);
+			try {
+				envoi(racine, buffOut, buffIn);
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 		}
 		catch (IOException e) 
@@ -65,13 +73,15 @@ public class Maitre extends Esclave
 
 	
 	
-	public static void envoi(File f, PrintWriter out, BufferedReader in) throws IOException 
+	public static void envoi(File f, ObjectOutputStream out, ObjectInputStream in) throws IOException, ClassNotFoundException 
 	{
 		int compteurcourrant = compteur++;
 		
 		String message;
+		String data = new String();
 		BufferedReader br;
 
+	
 		File[] list = f.listFiles();
 		
 		if(list.length>0) 
@@ -80,47 +90,47 @@ public class Maitre extends Esclave
 			{
 				if(list[i].isDirectory())
 				{
-					out.println(list[i].getAbsolutePath() + "  dir  " + list[i].lastModified());
-					out.flush();
+					out.writeObject(list[i].getAbsolutePath() + "  dir  " + list[i].lastModified());
+					
 					
 					envoi(list[i], out,in);
 				}
 				else 
 				{
-					br= new BufferedReader(new FileReader(list[i]));
 					
-					out.println(list[i].getAbsolutePath() + "  file  " + list[i].lastModified());
-					out.flush();
+					out.writeObject(list[i].getAbsolutePath() + "  file  " + list[i].lastModified());
 					
-					message = in.readLine();
+					
+					message = in.readObject().toString();
 					
 					if(message.equals("PASOK"))
 					{	
-						while((message=br.readLine())!=null) 
+						BufferedReader fis = new BufferedReader(new FileReader(list[i]));
+						
+						while((data=fis.readLine())!=null)
 						{
-							out.println(message);
-							out.flush();
+							out.writeObject(data);
 						}
-				
-						out.println("null");
-						out.flush();
+						
+						data = "null";
+						out.writeObject(data);
+						fis.close();
 					}
-					br.close();
 				}			
 			}
 		}
+		
 		System.out.println("fin de l'envoi " + compteurcourrant);
 		if(compteurcourrant!=1) 
 		{
-			out.println("null");
-			out.flush();
+			out.writeObject("null");
+			
 			
 		}
 		else 
 		{
-			System.out.println("finRacine"+compteurcourrant);
-			out.println("finRacine"+compteurcourrant);
-			out.flush();
+			System.out.println("\n\n\nfinRacine "+compteurcourrant);
+			out.writeObject("finRacine"+compteurcourrant);
 			in.close();
 			out.close();
 		}
