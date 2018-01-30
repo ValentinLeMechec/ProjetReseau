@@ -4,9 +4,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
@@ -22,27 +24,25 @@ public class Esclave {
 		
 		
 		
-		 File racine;
+		File racine;
 
 		try 
 		{
 			Socket socket = new Socket(InetAddress.getByName("172.18.50.99"), 56565);
-			ObjectOutputStream buffOut= new ObjectOutputStream(socket.getOutputStream());
-			ObjectInputStream buffIn= new ObjectInputStream(socket.getInputStream());
+			OutputStream out= socket.getOutputStream();
+			InputStream in= socket.getInputStream();
 			
 			/*envoi au serveur du choix du mode*/
 			System.out.println("Veuillez entrer le mode:");
 			BufferedReader consoleIn= new BufferedReader(new InputStreamReader(System.in));
 			String mode= consoleIn.readLine();
 			
-			buffOut.writeObject(mode);
-			buffOut.flush();
-			
-			
-			
+			out.write(mode.getBytes());
+			out.flush();
 			
 			boolean enCour = true;
 			
+			int taille;
 			String message;
 			
 			String nom;
@@ -52,10 +52,19 @@ public class Esclave {
 			Long lm;
 			
 			File f;
+			byte[] data = new byte[1024];
 			
 			System.out.println("avant le switch");
 			
-			mode = (String) buffIn.readObject();
+			while(in.available()<=0);
+			taille=in.read(data);
+			message = "";
+			for (int i = 0;i<taille;i++)
+			{
+				message += (char)data[i];
+			}
+			
+			mode = message;
 			System.out.println(mode);
 			
 			switch (mode)
@@ -73,13 +82,19 @@ public class Esclave {
 					{
 						System.out.println("la");
 						
-						message=(String) buffIn.readObject();
+						while(in.available()<=0);
+						taille=in.read(data);
+						message = "";
+						for (int i = 0;i<taille;i++)
+						{
+							message += (char)data[i];
+						}
 						System.out.println(message);
 						
-						if(message!=null && message.equals("finRacine1"))
+						if(message.equals("finRacine1"))
 							enCour = false;
 						
-						else if (message!=null && !message.equals("null"))
+						else if (!message.equals("null"))
 						{	
 							nom=message.split("  ")[0];
 							type=message.split("  ")[1];
@@ -89,7 +104,7 @@ public class Esclave {
 							if(type.equals("dir"))
 							{
 								f = new File(nom);
-								f.mkdir();
+								f.mkdirs();
 							}
 							else
 							{
@@ -98,23 +113,31 @@ public class Esclave {
 								if(f.lastModified()==lm)
 								{
 									System.out.println("OK");
-									buffOut.writeObject("OK");
-									buffOut.flush();
+									out.write("OK".getBytes());
+									out.flush();
 								}
 								else
 								{
 									System.out.println("PASOK");
-									buffOut.writeObject("PASOK");
-									buffOut.flush();
+									out.write("PASOK".getBytes());
+									out.flush();
 									
-									PrintWriter fos = new PrintWriter(new FileOutputStream(f));
+									FileOutputStream fos= new FileOutputStream(f);
 									do
 									{
 										System.out.println("ici");
-										message=(String) buffIn.readObject();
+										while(in.available()<=0);
+										taille=in.read(data);
+										message = "";
+										for (int i = 0;i<taille;i++)
+										{
+											message += (char)data[i];
+										}
+										System.out.println(message);
+										
 										if(!message.equals("null"))
 										{
-												fos.println(message);
+												fos.write(data,0,taille);
 												fos.flush();
 										}
 									}while(!message.equals("null"));
@@ -142,11 +165,20 @@ public class Esclave {
 					do
 					{
 						System.out.println("la");
-						message=(String) buffIn.readObject();
+						
+						while(in.available()<=0);
+						taille=in.read(data);
+						message = "";
+						for (int i = 0;i<taille;i++)
+						{
+							message += (char)data[i];
+						}
 						System.out.println(message);
-						if(message!=null && message.equals("finRacine1"))
+						
+						if(message.equals("finRacine1"))
 							enCour = false;
-						else if (message!=null && !message.equals("null"))
+						
+						else if (!message.equals("null"))
 						{	
 							nom=message.split("  ")[0];
 							type=message.split("  ")[1];
@@ -156,31 +188,47 @@ public class Esclave {
 							if(type.equals("dir"))
 							{
 								f = new File(nom);
-								f.mkdir();
+								f.mkdirs();
 							}
 							else
 							{
 								f = new File(nom);
 								f.createNewFile();
-								
-								System.out.println("PASOK");
-								buffOut.writeObject("PASOK");
-								buffOut.flush();
-
-								PrintWriter fos = new PrintWriter(new FileOutputStream(f));
-								do
+								if(f.lastModified()==lm)
 								{
-									System.out.println("ici");
-									message=(String) buffIn.readObject();
-									if(!message.equals("null"))
+									System.out.println("OK");
+									out.write("OK".getBytes());
+									out.flush();
+								}
+								else
+								{
+									System.out.println("PASOK");
+									out.write("PASOK".getBytes());
+									out.flush();
+									
+									FileOutputStream fos= new FileOutputStream(f);
+									do
 									{
-											fos.println(message);
-											fos.flush();
-									}
-								}while(!message.equals("null"));
-								fos.close();
-								
-								f.setLastModified(lm);
+										System.out.println("ici");
+										while(in.available()<=0);
+										taille=in.read(data);
+										message = "";
+										for (int i = 0;i<taille;i++)
+										{
+											message += (char)data[i];
+										}
+										System.out.println(message);
+										
+										if(!message.equals("null"))
+										{
+												fos.write(data,0,taille);
+												fos.flush();
+										}
+									}while(!message.equals("null"));
+									fos.close();
+									
+									f.setLastModified(lm);
+								}
 							}
 						}
 						System.out.println(enCour);
@@ -194,7 +242,7 @@ public class Esclave {
 					
 				case "push -w":
 					
-					System.out.println("push -w");
+					System.out.println("push -e");
 					
 					racine = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
 					racine.mkdirs();
@@ -202,11 +250,20 @@ public class Esclave {
 					do
 					{
 						System.out.println("la");
-						message=(String) buffIn.readObject();
+						
+						while(in.available()<=0);
+						taille=in.read(data);
+						message = "";
+						for (int i = 0;i<taille;i++)
+						{
+							message += (char)data[i];
+						}
 						System.out.println(message);
-						if(message!=null && message.equals("finRacine1"))
+						
+						if(message.equals("finRacine1"))
 							enCour = false;
-						else if (message!=null && !message.equals("null"))
+						
+						else if (!message.equals("null"))
 						{	
 							nom=message.split("  ")[0];
 							type=message.split("  ")[1];
@@ -216,32 +273,40 @@ public class Esclave {
 							if(type.equals("dir"))
 							{
 								f = new File(nom);
-								f.mkdir();
+								f.mkdirs();
 							}
 							else
 							{
 								f = new File(nom);
 								f.createNewFile();
-								if(f.lastModified()>lm)
+								if(f.lastModified()>=lm)
 								{
 									System.out.println("OK");
-									buffOut.writeObject("OK");
-									buffOut.flush();
+									out.write("OK".getBytes());
+									out.flush();
 								}
 								else
 								{
 									System.out.println("PASOK");
-									buffOut.writeObject("PASOK");
-									buffOut.flush();
-
-									PrintWriter fos = new PrintWriter(new FileOutputStream(f));
+									out.write("PASOK".getBytes());
+									out.flush();
+									
+									FileOutputStream fos= new FileOutputStream(f);
 									do
 									{
 										System.out.println("ici");
-										message=(String) buffIn.readObject();
+										while(in.available()<=0);
+										taille=in.read(data);
+										message = "";
+										for (int i = 0;i<taille;i++)
+										{
+											message += (char)data[i];
+										}
+										System.out.println(message);
+										
 										if(!message.equals("null"))
 										{
-												fos.println(message);
+												fos.write(data,0,taille);
 												fos.flush();
 										}
 									}while(!message.equals("null"));
@@ -258,11 +323,7 @@ public class Esclave {
 					break;
 					/*------------------FIN DU PUSH WATCHDOG----------------------*/
 					
-					
-					
-				case "pull":
-					break;
-					
+				
 				default:
 					System.out.println("default");
 					break;
@@ -272,12 +333,7 @@ public class Esclave {
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
-		
-
 		
 	}
 	
