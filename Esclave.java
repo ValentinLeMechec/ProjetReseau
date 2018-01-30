@@ -1,16 +1,10 @@
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
 
@@ -242,7 +236,7 @@ public class Esclave {
 					
 				case "push -w":
 					
-					System.out.println("push -e");
+					System.out.println("push -w");
 					
 					racine = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
 					racine.mkdirs();
@@ -279,7 +273,7 @@ public class Esclave {
 							{
 								f = new File(nom);
 								f.createNewFile();
-								if(f.lastModified()>=lm)
+								if(f.lastModified()<=lm)
 								{
 									System.out.println("OK");
 									out.write("OK".getBytes());
@@ -336,8 +330,6 @@ public class Esclave {
 		}
 		
 	}
-	
-	
 	
 	public static void viderDossier(File D)
 	{
