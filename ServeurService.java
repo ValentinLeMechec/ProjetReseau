@@ -45,6 +45,7 @@ public class ServeurService implements Runnable
 			
 			boolean enCour = true;
 			
+			int taille;
 			String message;
 			
 			String nom;
@@ -58,11 +59,12 @@ public class ServeurService implements Runnable
 			
 			System.out.println("avant le switch");
 			
-			if(in.available()!=0)in.read(data);
+			while(in.available()<=0);
+			taille=in.read(data);
 			message = "";
-			for (byte b : data)
+			for (int i = 0;i<taille;i++)
 			{
-				message += (char)b;
+				message += (char)data[i];
 			}
 			
 			String mode = message;
@@ -83,11 +85,12 @@ public class ServeurService implements Runnable
 					{
 						System.out.println("la");
 						
-						if(in.available()!=0)in.read(data);
+						while(in.available()<=0);
+						taille=in.read(data);
 						message = "";
-						for (byte b : data)
+						for (int i = 0;i<taille;i++)
 						{
-							message += (char)b;
+							message += (char)data[i];
 						}
 						System.out.println(message);
 						
@@ -126,16 +129,18 @@ public class ServeurService implements Runnable
 									do
 									{
 										System.out.println("ici");
-										if(in.available()!=0)in.read(data);
+										while(in.available()<=0);
+										taille=in.read(data);
 										message = "";
-										for (byte b : data)
+										for (int i = 0;i<taille;i++)
 										{
-											message += (char)b;
+											message += (char)data[i];
 										}
+										System.out.println(message);
 										
 										if(!message.equals("null"))
 										{
-												fos.write(data);
+												fos.write(data,0,taille);
 												fos.flush();
 										}
 									}while(!message.equals("null"));

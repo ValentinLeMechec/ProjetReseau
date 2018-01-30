@@ -118,8 +118,23 @@ public class Maitre extends Esclave
 						}
 						
 						message = "null";
+						
+						try {
+							Thread.sleep(500);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						
 						out.write(message.getBytes());
 						out.flush();
+						
+						try {
+							Thread.sleep(500);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
 					}
 					fis.close();
 				}			
@@ -131,6 +146,12 @@ public class Maitre extends Esclave
 			message = "null";
 			out.write(message.getBytes());
 			out.flush();
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			
 		}
 		else 
