@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,9 +72,10 @@ public class Maitre extends Esclave
 	{
 		int compteurcourrant = compteur++;
 		
+		int taille;
 		String message;
 		byte[] data = new byte[1024];
-		BufferedReader br;
+		FileInputStream fis;
 
 		File[] list = f.listFiles();
 		
@@ -91,25 +93,27 @@ public class Maitre extends Esclave
 				}
 				else 
 				{
-					br= new BufferedReader(new FileReader(list[i]));
+					fis= new FileInputStream(list[i]);
 					
 					message = list[i].getAbsolutePath() + "  file  " + list[i].lastModified();
 					out.write(message.getBytes());
 					out.flush();
 					
-					if(in.available()!=0)in.read(data);
+					while(in.available()<=0);
+					taille=in.read(data);
 					message = "";
-					for (byte b : data)
+					for (int j = 0 ;j<taille;j++)
 					{
-						message += (char)b;
+						message += (char)data[j];
 					}
 					System.out.println(message);
 					
 					if(message.equals("PASOK"))
 					{	
-						while((message=br.readLine())!=null) 
+						while(fis.available()>0) 
 						{
-							out.write(message.getBytes());
+							taille=fis.read(data);
+							out.write(data,0,taille);
 							out.flush();
 						}
 						
@@ -117,7 +121,7 @@ public class Maitre extends Esclave
 						out.write(message.getBytes());
 						out.flush();
 					}
-					br.close();
+					fis.close();
 				}			
 			}
 		}
