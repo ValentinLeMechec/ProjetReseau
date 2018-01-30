@@ -1,5 +1,7 @@
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -14,6 +16,8 @@ public class ServeurService implements Runnable
 	Socket client;
 	Semaphore mutex;
 	File racine;
+	
+	static int compteur = 1;
 	
 	public ServeurService(Socket s, Semaphore sem, File r)
 	{
@@ -39,9 +43,6 @@ public class ServeurService implements Runnable
 			InputStream in = client.getInputStream();
 			OutputStream out = client.getOutputStream();
 			
-			ObjectInputStream buffIn = new ObjectInputStream(in);
-			ObjectOutputStream buffOut = new ObjectOutputStream(out);
-			
 			boolean enCour = true;
 			
 			String message;
@@ -53,11 +54,18 @@ public class ServeurService implements Runnable
 			Long lm;
 			
 			File f;
-			byte[] data;
+			byte[] data = new byte[1024];
 			
 			System.out.println("avant le switch");
 			
-			String mode = (String) buffIn.readObject();
+			if(in.available()!=0)in.read(data);
+			message = "";
+			for (byte b : data)
+			{
+				message += (char)b;
+			}
+			
+			String mode = message;
 			System.out.println(mode);
 			
 			switch (mode)
@@ -75,13 +83,18 @@ public class ServeurService implements Runnable
 					{
 						System.out.println("la");
 						
-						message=(String) buffIn.readObject();
+						if(in.available()!=0)in.read(data);
+						message = "";
+						for (byte b : data)
+						{
+							message += (char)b;
+						}
 						System.out.println(message);
 						
-						if(message!=null && message.equals("finRacine1"))
+						if(message.equals("finRacine1"))
 							enCour = false;
 						
-						else if (message!=null && !message.equals("null"))
+						else if (!message.equals("null"))
 						{	
 							nom=message.split("  ")[0];
 							type=message.split("  ")[1];
@@ -91,7 +104,7 @@ public class ServeurService implements Runnable
 							if(type.equals("dir"))
 							{
 								f = new File(nom);
-								f.mkdir();
+								f.mkdirs();
 							}
 							else
 							{
@@ -100,23 +113,29 @@ public class ServeurService implements Runnable
 								if(f.lastModified()==lm)
 								{
 									System.out.println("OK");
-									buffOut.writeObject("OK");
-									buffOut.flush();
+									out.write("OK".getBytes());
+									out.flush();
 								}
 								else
 								{
 									System.out.println("PASOK");
-									buffOut.writeObject("PASOK");
-									buffOut.flush();
+									out.write("PASOK".getBytes());
+									out.flush();
 									
-									PrintWriter fos = new PrintWriter(new FileOutputStream(f));
+									FileOutputStream fos= new FileOutputStream(f);
 									do
 									{
 										System.out.println("ici");
-										message=(String) buffIn.readObject();
+										if(in.available()!=0)in.read(data);
+										message = "";
+										for (byte b : data)
+										{
+											message += (char)b;
+										}
+										
 										if(!message.equals("null"))
 										{
-												fos.println(message);
+												fos.write(data);
 												fos.flush();
 										}
 									}while(!message.equals("null"));
@@ -134,7 +153,7 @@ public class ServeurService implements Runnable
 					/*------------------FIN DU PUSH SUPPRESSION----------------------*/
 					
 					
-				case "push -e":
+				/*case "push -e":
 					
 					System.out.println("push -e");
 					
@@ -194,7 +213,7 @@ public class ServeurService implements Runnable
 					
 					
 					
-				case "push -w":
+				/*case "push -w":
 					
 					System.out.println("push -w");
 					
@@ -262,8 +281,37 @@ public class ServeurService implements Runnable
 					
 					
 					
-				case "pull":
-					break;
+				/*case "pull -s":case "pull -e":case "pull -w":
+					if(mode.equals("pull -s"))
+					{
+						System.out.println("pull -s");
+						buffOut.writeObject("push -s");
+						buffOut.flush();
+					}
+					else if(mode.equals("pull -e"))
+					{
+						System.out.println("pull -e");
+						buffOut.writeObject("push -e");
+						buffOut.flush();
+					}
+					else
+					{
+						System.out.println("pull -w");
+						buffOut.writeObject("push -w");
+						buffOut.flush();
+					}
+					
+					racine = new File("H:\\Mes documents\\ProgReseauProjet\\racine");
+					racine.mkdirs();
+					
+					try {
+						envoi(racine, buffOut, buffIn);
+					} catch (ClassNotFoundException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					break;*/
 					
 				default:
 					System.out.println("default");
@@ -274,12 +322,72 @@ public class ServeurService implements Runnable
 		catch (IOException e) 
 		{
 			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		
 		
+	}
+	
+	public static void envoi(File f, ObjectOutputStream out, ObjectInputStream in) throws IOException, ClassNotFoundException 
+	{
+		int compteurcourrant = compteur++;
+		
+		String message;
+		String data = new String();
+	
+		File[] list = f.listFiles();
+		
+		if(list.length>0) 
+		{
+			for(int i=0; i<list.length; i++) 
+			{
+				if(list[i].isDirectory())
+				{
+					out.writeObject(list[i].getAbsolutePath() + "  dir  " + list[i].lastModified());
+					out.flush();
+					
+					envoi(list[i], out,in);
+				}
+				else 
+				{
+					
+					out.writeObject(list[i].getAbsolutePath() + "  file  " + list[i].lastModified());
+					out.flush();
+					
+					message = in.readObject().toString();
+					
+					if(message.equals("PASOK"))
+					{	
+						BufferedReader fis = new BufferedReader(new FileReader(list[i]));
+						
+						while((data=fis.readLine())!=null)
+						{
+							out.writeObject(data);
+							out.flush();
+						}
+						
+						data = "null";
+						out.writeObject(data);
+						out.flush();
+						fis.close();
+					}
+				}			
+			}
+		}
+		
+		System.out.println("fin de l'envoi " + compteurcourrant);
+		if(compteurcourrant!=1) 
+		{
+			out.writeObject("null");
+			out.flush();
+			
+		}
+		else 
+		{
+			System.out.println("\n\n\nfinRacine "+compteurcourrant);
+			out.writeObject("finRacine"+compteurcourrant);
+			out.flush();
+			compteur=1;
+		}
 	}
 
 }
