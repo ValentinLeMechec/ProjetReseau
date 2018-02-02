@@ -8,7 +8,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
-public class Maitre extends Esclave
+public class Maitre
 {
 	static int compteur = 1;
 	
